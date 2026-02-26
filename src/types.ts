@@ -38,6 +38,12 @@ export interface EditorOptions {
      * @default [5, 5]
      */
     lineDash?: number[];
+    
+    /**
+     * maximum number of undo steps
+     * @default 20
+     */
+    maxHistorySize?: number;
 }
 
 /**

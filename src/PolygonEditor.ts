@@ -12,8 +12,12 @@ export class PolygonEditor {
     private mousePos: Point | null = null;
     private draggingPoint: { polyIndex: number, pointIndex: number } | null = null;
     private isDraggingOperation: boolean = false;
+    private hasSavedStateForDrag: boolean = false;
     private ghostPoint: { polyIndex: number, insertIndex: number, point: Point } | null = null;
     
+    // history
+    private history: { polygons: { points: Point[], fillColor: string, strokeColor: string }[], currentPoints: Point[] }[] = [];
+
     // lifecycle
     private resizeObserver: ResizeObserver | null = null;
     private handlers: { [key: string]: (e: any) => void } = {};
@@ -35,7 +39,8 @@ export class PolygonEditor {
             strokeColor: options.strokeColor ?? "#ff0000",
             pointRadius: options.pointRadius ?? 4,
             pointColor: options.pointColor ?? "#ffffff",
-            lineDash: options.lineDash ?? [5, 5]
+            lineDash: options.lineDash ?? [5, 5],
+            maxHistorySize: options.maxHistorySize ?? 20
         };
 
         // init canvas
@@ -281,6 +286,7 @@ export class PolygonEditor {
         
         // Handle insertion if ghost point exists and ctrl key is pressed
         if ((e.ctrlKey || e.metaKey) && this.ghostPoint) {
+            this.saveState();
             const { polyIndex, insertIndex, point } = this.ghostPoint;
             this.polygons[polyIndex].points.splice(insertIndex, 0, point);
             this.ghostPoint = null;
@@ -297,6 +303,7 @@ export class PolygonEditor {
         // Avoid duplicates
         const lastPoint = this.currentPoints[this.currentPoints.length - 1];
         if(!this.currentPoints.length || (!(lastPoint.x === p.x && lastPoint.y === p.y))) {
+             this.saveState();
              this.currentPoints.push(p);
         }
     }
@@ -305,6 +312,7 @@ export class PolygonEditor {
         if (!this.isActive) return;
 
         if (this.currentPoints.length >= 3) {
+            this.saveState();
             const index = this.polygons.length;
             const strokeColor = this.getColor(this.options.strokeColor, index);
             const fillColor = this.getColor(this.options.fillColor, index, strokeColor);
@@ -329,6 +337,10 @@ export class PolygonEditor {
 
         if (this.draggingPoint) {
             this.isDraggingOperation = true;
+            if (!this.hasSavedStateForDrag) {
+                this.saveState();
+                this.hasSavedStateForDrag = true;
+            }
             const { polyIndex, pointIndex } = this.draggingPoint;
             
             // Check if draggingPoint refers to currentPoints (polyIndex === -1)
@@ -384,6 +396,7 @@ export class PolygonEditor {
         if (hover) {
             this.draggingPoint = hover;
             this.isDraggingOperation = false; 
+            this.hasSavedStateForDrag = false;
         }
     }
 
@@ -391,12 +404,39 @@ export class PolygonEditor {
         this.draggingPoint = null;
     }
 
+    private saveState() {
+        // limit history size
+        if (this.history.length >= this.options.maxHistorySize) {
+            this.history.shift();
+        }
+
+        const snapshot = {
+            polygons: this.polygons.map(p => ({
+                points: p.points.map(pt => ({ ...pt })),
+                fillColor: p.fillColor,
+                strokeColor: p.strokeColor
+            })),
+            currentPoints: this.currentPoints.map(pt => ({ ...pt }))
+        };
+
+        this.history.push(snapshot);
+    }
+
     private undo() {
-        if (this.currentPoints.length > 0) {
-            this.currentPoints.pop();
-        } else if (this.polygons.length > 0) {
-             const poly = this.polygons.pop()!;
-             this.currentPoints = poly.points;
+        if (this.history.length > 0) {
+            const prevState = this.history.pop()!;
+            // deep copy again to avoid reference issues if we undo then redo (or modify)
+            this.polygons = prevState.polygons.map(p => ({
+                points: p.points.map(pt => ({ ...pt })),
+                fillColor: p.fillColor,
+                strokeColor: p.strokeColor
+            }));
+            this.currentPoints = prevState.currentPoints.map(pt => ({ ...pt }));
+            
+            // clear states
+            this.mousePos = null;
+            this.ghostPoint = null;
+            this.draggingPoint = null;
         }
     }
 
