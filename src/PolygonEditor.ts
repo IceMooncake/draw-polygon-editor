@@ -191,12 +191,20 @@ export class PolygonEditor {
             e.preventDefault();
             this.undo();
         };
+        this.handlers.keydown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                this.undo();
+            }
+        };
+
         this.canvas.addEventListener('click', this.handlers.click);
         this.canvas.addEventListener('dblclick', this.handlers.dblclick);
         this.canvas.addEventListener('mousemove', this.handlers.mousemove);
         this.canvas.addEventListener('mousedown', this.handlers.mousedown);
         this.canvas.addEventListener('mouseup', this.handlers.mouseup);
         this.canvas.addEventListener('contextmenu', this.handlers.contextmenu);
+        window.addEventListener('keydown', this.handlers.keydown);
     }
 
     private unbindEvents() {
@@ -206,6 +214,7 @@ export class PolygonEditor {
         if (this.handlers.mousedown) this.canvas.removeEventListener('mousedown', this.handlers.mousedown);
         if (this.handlers.mouseup) this.canvas.removeEventListener('mouseup', this.handlers.mouseup);
         if (this.handlers.contextmenu) this.canvas.removeEventListener('contextmenu', this.handlers.contextmenu);
+        if (this.handlers.keydown) window.removeEventListener('keydown', this.handlers.keydown);
     }
 
     private getRelativePos(e: MouseEvent): Point {
