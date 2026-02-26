@@ -11,16 +11,15 @@ export interface Point {
  */
 export interface EditorOptions {
     /** 
-     * fill color of the polygon
-     * @default "rgba(0, 0, 0, 0.2)"
+     * fill color of the polygon. Can be a single color or an array of colors to verify.
      */
-    fillColor?: string;
+    fillColor?: string | string[];
     
     /** 
-     * line color
+     * line color. Can be a single color or an array of colors to verify.
      * @default "#ff0000"
      */
-    strokeColor?: string;
+    strokeColor?: string | string[];
     
     /** 
      * radius of polygon vertices

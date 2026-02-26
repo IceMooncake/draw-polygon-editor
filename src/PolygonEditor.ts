@@ -6,7 +6,7 @@ export class PolygonEditor {
     private ctx: CanvasRenderingContext2D;
     
     // state
-    private polygons: Point[][] = [];
+    private polygons: { points: Point[], fillColor: string, strokeColor: string }[] = [];
     private currentPoints: Point[] = [];
     private isActive: boolean = true;
     private mousePos: Point | null = null;
@@ -30,7 +30,7 @@ export class PolygonEditor {
     constructor(element: HTMLElement, options: EditorOptions = {}) {
         this.container = element;
         this.options = {
-            fillColor: options.fillColor ?? "rgba(0, 0, 0, 0.2)",
+            fillColor: options.fillColor || '',
             strokeColor: options.strokeColor ?? "#ff0000",
             pointRadius: options.pointRadius ?? 4,
             pointColor: options.pointColor ?? "#ffffff",
@@ -103,7 +103,45 @@ export class PolygonEditor {
      * get all polygons (2D array)
      */
     public getPolygons(): Point[][] {
-        return this.polygons.map(p => [...p]);
+        return this.polygons.map(p => [...p.points]);
+    }
+
+    private getColor(color: string | string[] | undefined, index: number, fallbackColor?: string): string {
+        if (color === undefined || color === '') {
+             if (fallbackColor) {
+                 return this.adjustAlpha(fallbackColor, 0.2);
+             }
+             return "rgba(0, 0, 0, 0.2)";
+        }
+        if (Array.isArray(color)) {
+            return color[index % color.length];
+        }
+        return color;
+    }
+
+    private adjustAlpha(color: string, alpha: number): string {
+        try {
+            // Hex
+            if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(color)) {
+                let c: any = color.substring(1).split('');
+                if (c.length === 3) {
+                    c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+                }
+                c = '0x' + c.join('');
+                return 'rgba(' + [(c >> 16) & 255, (c >> 8) & 255, c & 255].join(',') + ',' + alpha + ')';
+            }
+            // RGB/RGBA
+            if (color.startsWith('rgb')) {
+                // simple parsing for rgb/rgba
+                const match = color.match(/(\d+(\.\d+)?)/g);
+                if (match && match.length >= 3) {
+                     return `rgba(${match[0]}, ${match[1]}, ${match[2]}, ${alpha})`;
+                }
+            }
+            return color; 
+        } catch(e) {
+            return color;
+        }
     }
 
     // --- internal implementation ---
@@ -195,7 +233,7 @@ export class PolygonEditor {
 
         // Search in completed polygons
         for (let i = 0; i < this.polygons.length; i++) {
-            const poly = this.polygons[i];
+            const poly = this.polygons[i].points;
             for (let j = 0; j < poly.length; j++) {
                 if (this.getDistance(pos, poly[j]) <= threshold) {
                     return { polyIndex: i, pointIndex: j };
@@ -226,7 +264,15 @@ export class PolygonEditor {
         if (!this.isActive) return;
 
         if (this.currentPoints.length >= 3) {
-            this.polygons.push([...this.currentPoints]);
+            const index = this.polygons.length;
+            const strokeColor = this.getColor(this.options.strokeColor, index);
+            const fillColor = this.getColor(this.options.fillColor, index, strokeColor);
+            
+            this.polygons.push({
+                points: [...this.currentPoints],
+                fillColor: fillColor,
+                strokeColor: strokeColor
+            });
             this.currentPoints = [];
             this.mousePos = null;
             if (this.onComplete) {
@@ -245,8 +291,8 @@ export class PolygonEditor {
             
             if (polyIndex === -1 && this.currentPoints[pointIndex]) {
                 this.currentPoints[pointIndex] = { ...this.mousePos };
-            } else if (this.polygons[polyIndex] && this.polygons[polyIndex][pointIndex]) {
-                this.polygons[polyIndex][pointIndex] = { ...this.mousePos };
+            } else if (this.polygons[polyIndex] && this.polygons[polyIndex].points[pointIndex]) {
+                this.polygons[polyIndex].points[pointIndex] = { ...this.mousePos };
             }
         } else {
             const hover = this.getHoverPoint(this.mousePos);
@@ -272,7 +318,8 @@ export class PolygonEditor {
         if (this.currentPoints.length > 0) {
             this.currentPoints.pop();
         } else if (this.polygons.length > 0) {
-             this.currentPoints = this.polygons.pop()!;
+             const poly = this.polygons.pop()!;
+             this.currentPoints = poly.points;
         }
     }
 
@@ -302,13 +349,16 @@ export class PolygonEditor {
         this.ctx.clearRect(0, 0, width, height);
 
         // Draw completed polygons
-        this.ctx.fillStyle = this.options.fillColor;
-        this.ctx.strokeStyle = this.options.strokeColor;
         this.ctx.lineWidth = 2;
         this.ctx.setLineDash([]);
 
-        for (const poly of this.polygons) {
+        for (const polyObj of this.polygons) {
+            const poly = polyObj.points;
             if (poly.length < 1) continue;
+            
+            this.ctx.fillStyle = polyObj.fillColor;
+            this.ctx.strokeStyle = polyObj.strokeColor;
+
             this.ctx.beginPath();
             this.ctx.moveTo(poly[0].x, poly[0].y);
             for (let i = 1; i < poly.length; i++) {
@@ -321,6 +371,13 @@ export class PolygonEditor {
 
         // Draw current polygon (being drawn)
         if (this.currentPoints.length > 0) {
+            const tempIndex = this.polygons.length;
+            const strokeColor = this.getColor(this.options.strokeColor, tempIndex);
+            const fillColor = this.getColor(this.options.fillColor, tempIndex, strokeColor);
+
+            this.ctx.fillStyle = fillColor;
+            this.ctx.strokeStyle = strokeColor;
+            
             this.ctx.beginPath();
             this.ctx.moveTo(this.currentPoints[0].x, this.currentPoints[0].y);
             for (let i = 1; i < this.currentPoints.length; i++) {
@@ -338,6 +395,7 @@ export class PolygonEditor {
 
         // Draw vertices
         this.ctx.fillStyle = this.options.pointColor;
+        this.ctx.strokeStyle = "#ffffff";
         
         const drawPoint = (p: Point) => {
             this.ctx.beginPath();
@@ -346,8 +404,18 @@ export class PolygonEditor {
             this.ctx.stroke();
         };
 
-        this.polygons.forEach(poly => poly.forEach(drawPoint));
+        this.polygons.forEach(poly => poly.points.forEach(drawPoint));
         this.currentPoints.forEach(drawPoint);
         
+        // Preview line for first point (if starting new polygon)
+        if (this.currentPoints.length > 1 && this.mousePos && this.isActive) {
+            this.ctx.beginPath();
+            const first = this.currentPoints[0];
+            this.ctx.moveTo(first.x, first.y);
+            this.ctx.lineTo(this.mousePos.x, this.mousePos.y);
+            this.ctx.strokeStyle = '#888';
+            this.ctx.setLineDash(this.options.lineDash);
+            this.ctx.stroke();
+        }
     }
 }

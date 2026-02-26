@@ -86,13 +86,19 @@
         // init editor
         const editor = new PolygonEditor(wrapper, {
             lineDash: [4, 4],
-            strokeColor: '#00ff00',
+            strokeColor: [
+              'rgb(255, 99, 132)',
+              '#1f6feb',
+              '#1098ad',
+              '#20c997',
+              '#ff6f92',
+            ],
             pointRadius: 5
         });
 
         // listen to events
         editor.setOnComplete((polygons) => {
-            log(`[Compleye] Polygon added. Total polygons: ${polygons.length}`);
+            log(`[Complete] Polygon added. Total polygons: ${polygons.length}`);
         });
 
         // toggle enable/disable
