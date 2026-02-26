@@ -81,7 +81,6 @@ export class PolygonEditor {
         this.points = [];
         this.isClosed = false;
         this.mousePos = null;
-        // trigger redraw
     }
 
     /**
@@ -148,7 +147,7 @@ export class PolygonEditor {
         this.handlers.mousemove = (e: MouseEvent) => this.onMouseMove(e);
         this.handlers.contextmenu = (e: MouseEvent) => {
             e.preventDefault();
-            this.undo();
+            this.undo(e);
         };
         this.canvas.addEventListener('click', this.handlers.click);
         this.canvas.addEventListener('dblclick', this.handlers.dblclick);
@@ -173,17 +172,12 @@ export class PolygonEditor {
 
     private onClick(e: MouseEvent) {
         if (!this.isActive || this.isClosed) return;
-        
         const p = this.getRelativePos(e);
-        this.addPoint(p);
+        if(!this.points.length || (!(this.points[this.points.length - 1].x === p.x && this.points[this.points.length - 1].y === p.y))) this.addPoint(p);
     }
 
     private onDblClick(e: MouseEvent) {
         if (!this.isActive || this.isClosed) return;
-
-        if (this.points.length > 0) {
-            this.points.pop();
-        }
 
         if (this.points.length >= 3) {
             this.isClosed = true;
@@ -203,9 +197,10 @@ export class PolygonEditor {
         this.points.push(p);
     }
 
-    private undo() {
+    private undo(e: MouseEvent) {
         if (this.isClosed) {
             this.isClosed = false;
+            this.mousePos = this.getRelativePos(e);
         } else {
             this.points.pop();
         }
@@ -236,6 +231,7 @@ export class PolygonEditor {
 
         this.ctx.clearRect(0, 0, width, height);
 
+        // polygon path
         if (this.points.length > 0) {
             this.ctx.beginPath();
             this.ctx.moveTo(this.points[0].x, this.points[0].y);
@@ -244,10 +240,12 @@ export class PolygonEditor {
             }
 
             if (this.isClosed) {
+                // when closed path
                 this.ctx.closePath();
                 this.ctx.fillStyle = this.options.fillColor;
                 this.ctx.fill();
             } else if (this.mousePos && this.isActive) {
+                // when drawing
                 this.ctx.lineTo(this.mousePos.x, this.mousePos.y);
             }
 
@@ -256,7 +254,7 @@ export class PolygonEditor {
             this.ctx.setLineDash([]);
             if (!this.isClosed && this.mousePos) {
                  this.ctx.stroke();
-                 
+                 // dash line to mouse position
                  if (this.mousePos) {
                      this.ctx.beginPath();
                      const last = this.points[this.points.length - 1];
@@ -271,6 +269,7 @@ export class PolygonEditor {
             }
         }
 
+        // points
         this.ctx.setLineDash([]);
         this.ctx.fillStyle = this.options.pointColor;
         this.ctx.strokeStyle = this.options.strokeColor;
@@ -284,5 +283,15 @@ export class PolygonEditor {
 
         this.points.forEach(drawPoint);
         
+        // preview line to mouse position
+        if (!this.isClosed && this.mousePos && this.isActive && this.points.length > 1) {
+            this.ctx.beginPath();
+            const first = this.points[0];
+            this.ctx.moveTo(first.x, first.y);
+            this.ctx.lineTo(this.mousePos.x, this.mousePos.y);
+            this.ctx.strokeStyle = '#888';
+            this.ctx.setLineDash(this.options.lineDash);
+            this.ctx.stroke();
+        }
     }
 }

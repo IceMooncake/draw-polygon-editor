@@ -52,7 +52,7 @@
 </head>
 <body>
 
-    <h1>多边形绘制</h1>
+    <h1>Draw-Polygon Demo</h1>
     
     <div class="container">
         <div id="image-wrapper">
@@ -61,12 +61,12 @@
 
         <div class="sidebar">
             <div class="controls">
-                <button id="btn-toggle">开启/关闭遮罩</button>
+                <button id="btn-toggle">开启/关闭遮罩 (open/close mask)</button>
                 <button id="btn-reset">重置 (Reset)</button>
-                <button id="btn-get">获取坐标</button>
+                <button id="btn-get">获取坐标 (Get Points)</button>
             </div>
-            <h3>输出日志:</h3>
-            <div id="output">...等待绘制...</div>
+            <h3>输出日志 (Output Log):</h3>
+            <div id="output">...waiting...</div>
         </div>
     </div>
     
@@ -92,7 +92,7 @@
 
         // 设置回调
         editor.setOnComplete((points) => {
-            log(`[Complete] 绘制完成! 包含 ${points.length} 个点。`);
+            log(`[Complete] has ${points.length} points.`);
             console.log(points);
         });
 
@@ -102,24 +102,24 @@
             isEnabled = !isEnabled;
             if (isEnabled) {
                 editor.enable();
-                log('[Info] 编辑器已开启');
+                log('[Info] engine enabled (canvas visible)');
             } else {
                 editor.disable();
-                log('[Info] 编辑器已禁用 (画布隐藏)');
+                log('[Info] engine disabled (canvas hidden)');
             }
         };
 
         btnReset.onclick = () => {
              editor.reset();
-             log('[Info] 画布已重置');
+             log('[Info] canvas reset');
         };
 
         btnGet.onclick = () => {
             const pts = editor.getPoints();
-            log(`[Data] 当前点位: ${JSON.stringify(pts)}`);
+            log(`[Data] current points: ${JSON.stringify(pts)}`);
         };
 
-        log('工具已就绪。在左侧图片区域单击绘点，双击闭合。右键撤销。');
+        log('Tool is ready. \nClick on the image area to draw points. \nDouble-click to close. \nRight-click to undo.');
     </script>
 </body>
 </html>
