@@ -1,0 +1,26 @@
+{
+  "name": "draw-polygon-editor",
+  "version": "1.0.0",
+  "description": "A TypeScript library for drawing polygons on a DOM element overlay.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "start": "concurrently \"tsc --watch\" \"live-server . --port=8080 --open=demo/index.html\"",
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "canvas",
+    "polygon",
+    "drawing",
+    "overlay"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "live-server": "^1.2.2",
+    "typescript": "^5.9.3"
+  }
+}

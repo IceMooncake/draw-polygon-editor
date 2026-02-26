@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polygon Editor Demo</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        #image-wrapper {
+            width: 600px;
+            height: 400px;
+            background-color: #f0f0f0;
+            border: 2px solid #ccc;
+        }
+        #image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .sidebar {
+            width: 300px;
+        }
+        .controls {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #eee;
+            border-radius: 4px;
+        }
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        #output {
+            white-space: pre-wrap;
+            font-family: monospace;
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            height: 200px;
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>多边形绘制</h1>
+    
+    <div class="container">
+        <div id="image-wrapper">
+             <img src="https://placehold.co/600x400?text=Target+Image" alt="Placeholder">
+        </div>
+
+        <div class="sidebar">
+            <div class="controls">
+                <button id="btn-toggle">开启/关闭遮罩</button>
+                <button id="btn-reset">重置 (Reset)</button>
+                <button id="btn-get">获取坐标</button>
+            </div>
+            <h3>输出日志:</h3>
+            <div id="output">...等待绘制...</div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { PolygonEditor } from '../dist/index.js';
+
+        const wrapper = document.getElementById('image-wrapper');
+        const output = document.getElementById('output');
+        const btnToggle = document.getElementById('btn-toggle');
+        const btnReset = document.getElementById('btn-reset');
+        const btnGet = document.getElementById('btn-get');
+
+        function log(msg) {
+            output.textContent = msg + '\n' + output.textContent;
+        }
+
+        // 初始化编辑器
+        const editor = new PolygonEditor(wrapper, {
+            lineDash: [4, 4],
+            strokeColor: '#00ff00',
+            pointRadius: 5
+        });
+
+        // 设置回调
+        editor.setOnComplete((points) => {
+            log(`[Complete] 绘制完成! 包含 ${points.length} 个点。`);
+            console.log(points);
+        });
+
+        // 按钮事件
+        let isEnabled = true;
+        btnToggle.onclick = () => {
+            isEnabled = !isEnabled;
+            if (isEnabled) {
+                editor.enable();
+                log('[Info] 编辑器已开启');
+            } else {
+                editor.disable();
+                log('[Info] 编辑器已禁用 (画布隐藏)');
+            }
+        };
+
+        btnReset.onclick = () => {
+             editor.reset();
+             log('[Info] 画布已重置');
+        };
+
+        btnGet.onclick = () => {
+            const pts = editor.getPoints();
+            log(`[Data] 当前点位: ${JSON.stringify(pts)}`);
+        };
+
+        log('工具已就绪。在左侧图片区域单击绘点，双击闭合。右键撤销。');
+    </script>
+</body>
+</html>
