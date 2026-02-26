@@ -10,6 +10,8 @@ export class PolygonEditor {
     private currentPoints: Point[] = [];
     private isActive: boolean = true;
     private mousePos: Point | null = null;
+    private draggingPoint: { polyIndex: number, pointIndex: number } | null = null;
+    private isDraggingOperation: boolean = false;
     
     // lifecycle
     private resizeObserver: ResizeObserver | null = null;
@@ -145,6 +147,8 @@ export class PolygonEditor {
         this.handlers.click = (e: MouseEvent) => this.onClick(e);
         this.handlers.dblclick = (e: MouseEvent) => this.onDblClick(e);
         this.handlers.mousemove = (e: MouseEvent) => this.onMouseMove(e);
+        this.handlers.mousedown = (e: MouseEvent) => this.onMouseDown(e);
+        this.handlers.mouseup = (e: MouseEvent) => this.onMouseUp(e);
         this.handlers.contextmenu = (e: MouseEvent) => {
             e.preventDefault();
             this.undo(e);
@@ -152,6 +156,8 @@ export class PolygonEditor {
         this.canvas.addEventListener('click', this.handlers.click);
         this.canvas.addEventListener('dblclick', this.handlers.dblclick);
         this.canvas.addEventListener('mousemove', this.handlers.mousemove);
+        this.canvas.addEventListener('mousedown', this.handlers.mousedown);
+        this.canvas.addEventListener('mouseup', this.handlers.mouseup);
         this.canvas.addEventListener('contextmenu', this.handlers.contextmenu);
     }
 
@@ -159,6 +165,8 @@ export class PolygonEditor {
         if (this.handlers.click) this.canvas.removeEventListener('click', this.handlers.click);
         if (this.handlers.dblclick) this.canvas.removeEventListener('dblclick', this.handlers.dblclick);
         if (this.handlers.mousemove) this.canvas.removeEventListener('mousemove', this.handlers.mousemove);
+        if (this.handlers.mousedown) this.canvas.removeEventListener('mousedown', this.handlers.mousedown);
+        if (this.handlers.mouseup) this.canvas.removeEventListener('mouseup', this.handlers.mouseup);
         if (this.handlers.contextmenu) this.canvas.removeEventListener('contextmenu', this.handlers.contextmenu);
     }
 
@@ -170,11 +178,46 @@ export class PolygonEditor {
         };
     }
 
+    private getDistance(p1: Point, p2: Point): number {
+        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    }
+
+    private getHoverPoint(pos: Point): { polyIndex: number, pointIndex: number } | null {
+        // defined threshold for grabbing a point
+        const threshold = this.options.pointRadius * 2;
+        
+        // Search in current points
+        for (let i = 0; i < this.currentPoints.length; i++) {
+            if (this.getDistance(pos, this.currentPoints[i]) <= threshold) {
+                return { polyIndex: -1, pointIndex: i };
+            }
+        }
+
+        // Search in completed polygons
+        for (let i = 0; i < this.polygons.length; i++) {
+            const poly = this.polygons[i];
+            for (let j = 0; j < poly.length; j++) {
+                if (this.getDistance(pos, poly[j]) <= threshold) {
+                    return { polyIndex: i, pointIndex: j };
+                }
+            }
+        }
+        return null;
+    }
+
     private onClick(e: MouseEvent) {
         if (!this.isActive) return;
+        
+        // If a drag operation happened, don't add a point
+        if (this.isDraggingOperation) {
+            this.isDraggingOperation = false;
+            return;
+        }
+
         const p = this.getRelativePos(e);
         // Avoid duplicates
-        if(!this.currentPoints.length || (!(this.currentPoints[this.currentPoints.length - 1].x === p.x && this.currentPoints[this.currentPoints.length - 1].y === p.y))) {
+        const lastPoint = this.currentPoints[this.currentPoints.length - 1];
+        if(!this.currentPoints.length || (!(lastPoint.x === p.x && lastPoint.y === p.y))) {
              this.currentPoints.push(p);
         }
     }
@@ -195,6 +238,34 @@ export class PolygonEditor {
     private onMouseMove(e: MouseEvent) {
         if (!this.isActive) return;
         this.mousePos = this.getRelativePos(e);
+
+        if (this.draggingPoint) {
+            this.isDraggingOperation = true;
+            const { polyIndex, pointIndex } = this.draggingPoint;
+            
+            if (polyIndex === -1 && this.currentPoints[pointIndex]) {
+                this.currentPoints[pointIndex] = { ...this.mousePos };
+            } else if (this.polygons[polyIndex] && this.polygons[polyIndex][pointIndex]) {
+                this.polygons[polyIndex][pointIndex] = { ...this.mousePos };
+            }
+        } else {
+            const hover = this.getHoverPoint(this.mousePos);
+            this.canvas.style.cursor = hover ? 'move' : 'crosshair';
+        }
+    }
+
+    private onMouseDown(e: MouseEvent) {
+        if (!this.isActive) return;
+        const p = this.getRelativePos(e);
+        const hover = this.getHoverPoint(p);
+        if (hover) {
+            this.draggingPoint = hover;
+            this.isDraggingOperation = false; 
+        }
+    }
+
+    private onMouseUp(e: MouseEvent) {
+        this.draggingPoint = null;
     }
 
     private undo(e: MouseEvent) {

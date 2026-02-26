@@ -83,19 +83,19 @@
             output.textContent = msg + '\n' + output.textContent;
         }
 
-        // 初始化编辑器
+        // init editor
         const editor = new PolygonEditor(wrapper, {
             lineDash: [4, 4],
             strokeColor: '#00ff00',
             pointRadius: 5
         });
 
-        // 设置回调
+        // listen to events
         editor.setOnComplete((polygons) => {
             log(`[Compleye] Polygon added. Total polygons: ${polygons.length}`);
         });
 
-        // 按钮事件
+        // toggle enable/disable
         let isEnabled = true;
         btnToggle.onclick = () => {
             isEnabled = !isEnabled;
