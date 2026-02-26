@@ -1,6 +1,6 @@
 {
   "name": "draw-polygon-editor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A TypeScript library for drawing polygons on a DOM element overlay.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

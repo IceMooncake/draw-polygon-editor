@@ -171,11 +171,14 @@ interface EditorOptions {
 
 ## API Methods
 
-*   `enable()`: Activate the drawing layer.
-*   `disable()`: Deactivate/Hide the drawing layer.
-*   `reset()`: Clear all polygons and reset state.
-*   `destroy()`: Clean up event listeners and DOM elements.
-*   `getPolygons()`: Returns `Point[][]`, an array of polygons (each polygon is an array of points).
+| Method              | Description                                                                 | Signature / Return                                      |
+|---------------------|-----------------------------------------------------------------------------|---------------------------------------------------------|
+| `enable()`          | Activate the drawing layer.                                                | `void`                                                 |
+| `disable()`         | Deactivate / hide the drawing layer.                                       | `void`                                                 |
+| `reset()`           | Clear all polygons and reset state.                                        | `void`                                                 |
+| `destroy()`         | Clean up event listeners and DOM elements.                                 | `void`                                                 |
+| `getPolygons()`     | Get all completed polygons.                                                | `Point[][]`                                            |
+| `setOnComplete(cb)` | Register a callback fired when a polygon is completed (double-click event). | `cb: (polygons: Point[][]) => void`                    |
 
 ## Events
 
@@ -357,11 +360,14 @@ interface EditorOptions {
 
 ## API 方法
 
-*   `enable()`: 启用绘制层。
-*   `disable()`: 禁用绘制层。
-*   `reset()`: 清空画布，重置所有状态。
-*   `destroy()`: 销毁实例，清理事件监听和 DOM 元素。
-*   `getPolygons()`: 获取所有多边形数据，返回 `Point[][]`。
+| 方法                    | 说明                                               | 函数签名 / 返回值                                  |
+|-------------------------|----------------------------------------------------|---------------------------------------------------|
+| `enable()`              | 启用绘制层。                                       | `void`                                            |
+| `disable()`             | 禁用 / 隐藏绘制层。                               | `void`                                            |
+| `reset()`               | 清空画布并重置所有状态。                         | `void`                                            |
+| `destroy()`             | 销毁实例并清理事件监听、DOM 元素。               | `void`                                            |
+| `getPolygons()`         | 获取所有已完成多边形。                           | `Point[][]`                                       |
+| `setOnComplete(cb)`     | 在多边形闭合（双击）时触发回调。                 | `cb: (polygons: Point[][]) => void`               |
 
 ## 交互操作
 
