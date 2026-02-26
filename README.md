@@ -33,11 +33,11 @@ A lightweight, interactive/typescript library for drawing and editing polygons o
 Install via your preferred modern package manager:
 
 ```bash
-npm install draw-polygon
+npm install draw-polygon-editor
 # or
-pnpm add draw-polygon
+pnpm add draw-polygon-editor
 # or
-yarn add draw-polygon
+yarn add draw-polygon-editor
 ```
 
 ## Usage
@@ -71,7 +71,7 @@ Example with a functional component using `useRef` and `useEffect`:
 
 ```tsx
 import React, { useEffect, useRef } from 'react';
-import { PolygonEditor } from 'draw-polygon';
+import { PolygonEditor } from 'draw-polygon-editor';
 
 export const PolygonCanvas: React.FC = () => {
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -117,7 +117,7 @@ Example with Vue 3 `<script setup lang="ts">`:
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
-import { PolygonEditor } from 'draw-polygon';
+import { PolygonEditor } from 'draw-polygon-editor';
 
 const container = ref<HTMLDivElement | null>(null);
 let editor: PolygonEditor | null = null;
@@ -227,11 +227,11 @@ interface EditorOptions {
 使用现代包管理工具安装：
 
 ```bash
-npm install draw-polygon
+npm install draw-polygon-editor
 # 或
-pnpm add draw-polygon
+pnpm add draw-polygon-editor
 # 或
-yarn add draw-polygon
+yarn add draw-polygon-editor
 ```
 
 ## 使用方法
@@ -265,7 +265,7 @@ yarn add draw-polygon
 
 ```tsx
 import React, { useEffect, useRef } from 'react';
-import { PolygonEditor } from 'draw-polygon';
+import { PolygonEditor } from 'draw-polygon-editor';
 
 export const PolygonCanvas: React.FC = () => {
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -311,7 +311,7 @@ export const PolygonCanvas: React.FC = () => {
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
-import { PolygonEditor } from 'draw-polygon';
+import { PolygonEditor } from 'draw-polygon-editor';
 
 const container = ref<HTMLDivElement | null>(null);
 let editor: PolygonEditor | null = null;
