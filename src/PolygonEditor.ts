@@ -148,10 +148,10 @@ export class PolygonEditor {
         this.handlers.dblclick = (e: MouseEvent) => this.onDblClick(e);
         this.handlers.mousemove = (e: MouseEvent) => this.onMouseMove(e);
         this.handlers.mousedown = (e: MouseEvent) => this.onMouseDown(e);
-        this.handlers.mouseup = (e: MouseEvent) => this.onMouseUp(e);
+        this.handlers.mouseup = (e: MouseEvent) => this.onMouseUp();
         this.handlers.contextmenu = (e: MouseEvent) => {
             e.preventDefault();
-            this.undo(e);
+            this.undo();
         };
         this.canvas.addEventListener('click', this.handlers.click);
         this.canvas.addEventListener('dblclick', this.handlers.dblclick);
@@ -264,11 +264,11 @@ export class PolygonEditor {
         }
     }
 
-    private onMouseUp(e: MouseEvent) {
+    private onMouseUp() {
         this.draggingPoint = null;
     }
 
-    private undo(e: MouseEvent) {
+    private undo() {
         if (this.currentPoints.length > 0) {
             this.currentPoints.pop();
         } else if (this.polygons.length > 0) {
@@ -349,15 +349,5 @@ export class PolygonEditor {
         this.polygons.forEach(poly => poly.forEach(drawPoint));
         this.currentPoints.forEach(drawPoint);
         
-        // Preview line for first point (if starting new polygon)
-        if (this.currentPoints.length > 1 && this.mousePos && this.isActive) {
-            this.ctx.beginPath();
-            const first = this.currentPoints[0];
-            this.ctx.moveTo(first.x, first.y);
-            this.ctx.lineTo(this.mousePos.x, this.mousePos.y);
-            this.ctx.strokeStyle = '#888';
-            this.ctx.setLineDash(this.options.lineDash);
-            this.ctx.stroke();
-        }
     }
 }
