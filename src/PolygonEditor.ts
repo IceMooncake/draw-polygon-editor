@@ -12,6 +12,7 @@ export class PolygonEditor {
     private mousePos: Point | null = null;
     private draggingPoint: { polyIndex: number, pointIndex: number } | null = null;
     private isDraggingOperation: boolean = false;
+    private ghostPoint: { polyIndex: number, insertIndex: number, point: Point } | null = null;
     
     // lifecycle
     private resizeObserver: ResizeObserver | null = null;
@@ -229,6 +230,29 @@ export class PolygonEditor {
         return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
     }
 
+    private getClosestPointOnSegment(p: Point, p1: Point, p2: Point): Point {
+        const x = p1.x;
+        const y = p1.y;
+        const dx = p2.x - x;
+        const dy = p2.y - y;
+        const dot = dx * dx + dy * dy;
+        let t;
+
+        if (dot > 0) {
+            t = ((p.x - x) * dx + (p.y - y) * dy) / dot;
+        } else {
+            t = -1;
+        }
+
+        if (t < 0) {
+            return p1;
+        } else if (t > 1) {
+            return p2;
+        } else {
+            return { x: x + t * dx, y: y + t * dy };
+        }
+    }
+
     private getHoverPoint(pos: Point): { polyIndex: number, pointIndex: number } | null {
         // defined threshold for grabbing a point
         const threshold = this.options.pointRadius * 2;
@@ -255,6 +279,14 @@ export class PolygonEditor {
     private onClick(e: MouseEvent) {
         if (!this.isActive) return;
         
+        // Handle insertion if ghost point exists and ctrl key is pressed
+        if ((e.ctrlKey || e.metaKey) && this.ghostPoint) {
+            const { polyIndex, insertIndex, point } = this.ghostPoint;
+            this.polygons[polyIndex].points.splice(insertIndex, 0, point);
+            this.ghostPoint = null;
+            return;
+        }
+
         // If a drag operation happened, don't add a point
         if (this.isDraggingOperation) {
             this.isDraggingOperation = false;
@@ -293,19 +325,55 @@ export class PolygonEditor {
     private onMouseMove(e: MouseEvent) {
         if (!this.isActive) return;
         this.mousePos = this.getRelativePos(e);
+        const isCtrl = e.ctrlKey || e.metaKey;
 
         if (this.draggingPoint) {
             this.isDraggingOperation = true;
             const { polyIndex, pointIndex } = this.draggingPoint;
             
-            if (polyIndex === -1 && this.currentPoints[pointIndex]) {
-                this.currentPoints[pointIndex] = { ...this.mousePos };
-            } else if (this.polygons[polyIndex] && this.polygons[polyIndex].points[pointIndex]) {
-                this.polygons[polyIndex].points[pointIndex] = { ...this.mousePos };
+            // Check if draggingPoint refers to currentPoints (polyIndex === -1)
+            // or existing polygons
+            if (polyIndex === -1) {
+                 if (this.currentPoints[pointIndex]) {
+                     this.currentPoints[pointIndex] = { ...this.mousePos };
+                 }
+            } else if (this.polygons[polyIndex]) {
+                 if (this.polygons[polyIndex].points[pointIndex]) {
+                     this.polygons[polyIndex].points[pointIndex] = { ...this.mousePos };
+                 }
             }
         } else {
             const hover = this.getHoverPoint(this.mousePos);
             this.canvas.style.cursor = hover ? 'move' : 'crosshair';
+
+            // Calculate ghost point for insertion
+            this.ghostPoint = null;
+            if (isCtrl && !hover) {
+                const threshold = this.options.pointRadius * 2;
+                
+                // Only check completed polygons
+                for (let i = 0; i < this.polygons.length; i++) {
+                    const points = this.polygons[i].points;
+                    for (let j = 0; j < points.length; j++) {
+                        const p1 = points[j];
+                        const p2 = points[(j + 1) % points.length]; // wrapping
+                        
+                        const closest = this.getClosestPointOnSegment(this.mousePos, p1, p2);
+                        const dist = this.getDistance(this.mousePos, closest);
+                        
+                        if (dist <= threshold) {
+                            this.ghostPoint = {
+                                polyIndex: i,
+                                insertIndex: j + 1,
+                                point: closest
+                            };
+                            this.canvas.style.cursor = 'copy'; // indicating add
+                            break;
+                        }
+                    }
+                    if (this.ghostPoint) break;
+                }
+            }
         }
     }
 
@@ -415,7 +483,18 @@ export class PolygonEditor {
 
         this.polygons.forEach(poly => poly.points.forEach(drawPoint));
         this.currentPoints.forEach(drawPoint);
-        
+
+        // Draw ghost point
+        if (this.ghostPoint) {
+            this.ctx.fillStyle = this.adjustAlpha(this.options.pointColor, 0.5);
+            this.ctx.setLineDash([2, 2]);
+            this.ctx.beginPath();
+            this.ctx.arc(this.ghostPoint.point.x, this.ghostPoint.point.y, this.options.pointRadius, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+            this.ctx.setLineDash([]);
+        }
+
         // Preview line for first point (if starting new polygon)
         if (this.currentPoints.length > 1 && this.mousePos && this.isActive) {
             this.ctx.beginPath();
