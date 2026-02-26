@@ -1,5 +1,7 @@
 # Polygon Editor
 
+![Polygon editor demo](./demo/demo.png)
+
 A lightweight, interactive/typescript library for drawing and editing polygons on HTML Canvas.
 
 [中文文档](#polygon-editor-中文文档)
@@ -21,7 +23,8 @@ A lightweight, interactive/typescript library for drawing and editing polygons o
 *   **Smart Styling**:
     *   **Multiple Colors**: Pass an array of colors for `fillColor` or `strokeColor` to automatically cycle through them for each new polygon.
     *   **Auto-Transparency**: If `fillColor` is not provided, it automatically generates a 20% opacity version of the `strokeColor` (supports Hex, RGB, RGBA).
-*   **Undo Support**: Right-click to undo the last point or delete the last polygon.
+*   **Undo Support**: Right-click or Ctrl/Cmd+Z to undo the last operation (add point, move point, etc.).
+*   **Edge Insertion**: Ctrl/Cmd+Click on an edge to insert a new vertex between two points.
 *   **Responsive**: Automatically adjusts to the container size.
 *   **TypeScript Support**: Fully typed options and methods.
 
@@ -166,6 +169,9 @@ interface EditorOptions {
 
     /** Line dash pattern [line, gap]. Default: [5, 5] */
     lineDash?: number[];
+
+    /** Maximum number of undo steps. Default: 20 */
+    maxHistorySize?: number;
 }
 ```
 
@@ -184,7 +190,8 @@ interface EditorOptions {
 
 *   **Left Click**: Add point.
 *   **Double Click**: Finish current polygon.
-*   **Right Click**: Undo last point/Remove last polygon.
+*   **Right Click / Ctrl/Cmd+Z**: Undo last operation.
+*   **Ctrl/Cmd+Click (edge)**: Insert a vertex between two points on an existing polygon.
 *   **Drag**: Move vertices.
 
 ---
@@ -210,7 +217,8 @@ interface EditorOptions {
 *   **智能样式**:
     *   **多色循环**: `fillColor` 和 `strokeColor` 支持传入颜色数组，绘制新多边形时会自动循环使用。
     *   **自动填充透明度**: 如果未指定 `fillColor`，系统会自动根据 `strokeColor` 生成透明度为 20% 的填充色（支持 Hex, RGB, RGBA 格式）。
-*   **撤销功能**: 右键点击可撤销上一个点，或删除上一个已完成的多边形。
+*   **撤销功能**: 右键点击或 Ctrl/Cmd+Z 可撤销上一步操作（支持撤销移动点、添加点等）。
+*   **边上插点**: 按住 Ctrl/Cmd 并在边上单击，可在两个顶点之间新增一个顶点。
 *   **响应式**: 自动适应容器大小变化。
 *   **TypeScript 支持**: 提供完整的类型定义。
 
@@ -355,6 +363,9 @@ interface EditorOptions {
 
     /** 虚线样式 [实线长, 间隙长]。默认值: [5, 5] */
     lineDash?: number[];
+
+    /** 最大撤销步数。默认值: 20 */
+    maxHistorySize?: number;
 }
 ```
 
@@ -370,8 +381,8 @@ interface EditorOptions {
 | `setOnComplete(cb)`     | 在多边形闭合（双击）时触发回调。                 | `cb: (polygons: Point[][]) => void`               |
 
 ## 交互操作
-
 *   **左键单击**: 添加顶点。
 *   **双击**: 完成当前多边形绘制。
-*   **右键单击**: 撤销上一个顶点 / 删除最后一个多边形。
+*   **右键单击 / Ctrl/Cmd+Z**: 撤销上一步操作。
+*   **Ctrl/Cmd+单击（边）**: 在多边形边上插入一个新的顶点。
 *   **拖拽**: 移动顶点调整形状。

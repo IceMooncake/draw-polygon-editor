@@ -12,7 +12,12 @@ export class PolygonEditor {
     private mousePos: Point | null = null;
     private draggingPoint: { polyIndex: number, pointIndex: number } | null = null;
     private isDraggingOperation: boolean = false;
+    private hasSavedStateForDrag: boolean = false;
+    private ghostPoint: { polyIndex: number, insertIndex: number, point: Point } | null = null;
     
+    // history
+    private history: { polygons: { points: Point[], fillColor: string, strokeColor: string }[], currentPoints: Point[] }[] = [];
+
     // lifecycle
     private resizeObserver: ResizeObserver | null = null;
     private handlers: { [key: string]: (e: any) => void } = {};
@@ -34,7 +39,8 @@ export class PolygonEditor {
             strokeColor: options.strokeColor ?? "#ff0000",
             pointRadius: options.pointRadius ?? 4,
             pointColor: options.pointColor ?? "#ffffff",
-            lineDash: options.lineDash ?? [5, 5]
+            lineDash: options.lineDash ?? [5, 5],
+            maxHistorySize: options.maxHistorySize ?? 20
         };
 
         // init canvas
@@ -191,12 +197,20 @@ export class PolygonEditor {
             e.preventDefault();
             this.undo();
         };
+        this.handlers.keydown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                e.preventDefault();
+                this.undo();
+            }
+        };
+
         this.canvas.addEventListener('click', this.handlers.click);
         this.canvas.addEventListener('dblclick', this.handlers.dblclick);
         this.canvas.addEventListener('mousemove', this.handlers.mousemove);
         this.canvas.addEventListener('mousedown', this.handlers.mousedown);
         this.canvas.addEventListener('mouseup', this.handlers.mouseup);
         this.canvas.addEventListener('contextmenu', this.handlers.contextmenu);
+        window.addEventListener('keydown', this.handlers.keydown);
     }
 
     private unbindEvents() {
@@ -206,6 +220,7 @@ export class PolygonEditor {
         if (this.handlers.mousedown) this.canvas.removeEventListener('mousedown', this.handlers.mousedown);
         if (this.handlers.mouseup) this.canvas.removeEventListener('mouseup', this.handlers.mouseup);
         if (this.handlers.contextmenu) this.canvas.removeEventListener('contextmenu', this.handlers.contextmenu);
+        if (this.handlers.keydown) window.removeEventListener('keydown', this.handlers.keydown);
     }
 
     private getRelativePos(e: MouseEvent): Point {
@@ -218,6 +233,29 @@ export class PolygonEditor {
 
     private getDistance(p1: Point, p2: Point): number {
         return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    }
+
+    private getClosestPointOnSegment(p: Point, p1: Point, p2: Point): Point {
+        const x = p1.x;
+        const y = p1.y;
+        const dx = p2.x - x;
+        const dy = p2.y - y;
+        const dot = dx * dx + dy * dy;
+        let t;
+
+        if (dot > 0) {
+            t = ((p.x - x) * dx + (p.y - y) * dy) / dot;
+        } else {
+            t = -1;
+        }
+
+        if (t < 0) {
+            return p1;
+        } else if (t > 1) {
+            return p2;
+        } else {
+            return { x: x + t * dx, y: y + t * dy };
+        }
     }
 
     private getHoverPoint(pos: Point): { polyIndex: number, pointIndex: number } | null {
@@ -246,6 +284,15 @@ export class PolygonEditor {
     private onClick(e: MouseEvent) {
         if (!this.isActive) return;
         
+        // Handle insertion if ghost point exists and ctrl key is pressed
+        if ((e.ctrlKey || e.metaKey) && this.ghostPoint) {
+            this.saveState();
+            const { polyIndex, insertIndex, point } = this.ghostPoint;
+            this.polygons[polyIndex].points.splice(insertIndex, 0, point);
+            this.ghostPoint = null;
+            return;
+        }
+
         // If a drag operation happened, don't add a point
         if (this.isDraggingOperation) {
             this.isDraggingOperation = false;
@@ -256,6 +303,7 @@ export class PolygonEditor {
         // Avoid duplicates
         const lastPoint = this.currentPoints[this.currentPoints.length - 1];
         if(!this.currentPoints.length || (!(lastPoint.x === p.x && lastPoint.y === p.y))) {
+             this.saveState();
              this.currentPoints.push(p);
         }
     }
@@ -264,6 +312,7 @@ export class PolygonEditor {
         if (!this.isActive) return;
 
         if (this.currentPoints.length >= 3) {
+            this.saveState();
             const index = this.polygons.length;
             const strokeColor = this.getColor(this.options.strokeColor, index);
             const fillColor = this.getColor(this.options.fillColor, index, strokeColor);
@@ -284,19 +333,59 @@ export class PolygonEditor {
     private onMouseMove(e: MouseEvent) {
         if (!this.isActive) return;
         this.mousePos = this.getRelativePos(e);
+        const isCtrl = e.ctrlKey || e.metaKey;
 
         if (this.draggingPoint) {
             this.isDraggingOperation = true;
+            if (!this.hasSavedStateForDrag) {
+                this.saveState();
+                this.hasSavedStateForDrag = true;
+            }
             const { polyIndex, pointIndex } = this.draggingPoint;
             
-            if (polyIndex === -1 && this.currentPoints[pointIndex]) {
-                this.currentPoints[pointIndex] = { ...this.mousePos };
-            } else if (this.polygons[polyIndex] && this.polygons[polyIndex].points[pointIndex]) {
-                this.polygons[polyIndex].points[pointIndex] = { ...this.mousePos };
+            // Check if draggingPoint refers to currentPoints (polyIndex === -1)
+            // or existing polygons
+            if (polyIndex === -1) {
+                 if (this.currentPoints[pointIndex]) {
+                     this.currentPoints[pointIndex] = { ...this.mousePos };
+                 }
+            } else if (this.polygons[polyIndex]) {
+                 if (this.polygons[polyIndex].points[pointIndex]) {
+                     this.polygons[polyIndex].points[pointIndex] = { ...this.mousePos };
+                 }
             }
         } else {
             const hover = this.getHoverPoint(this.mousePos);
             this.canvas.style.cursor = hover ? 'move' : 'crosshair';
+
+            // Calculate ghost point for insertion
+            this.ghostPoint = null;
+            if (isCtrl && !hover) {
+                const threshold = this.options.pointRadius * 2;
+                
+                // Only check completed polygons
+                for (let i = 0; i < this.polygons.length; i++) {
+                    const points = this.polygons[i].points;
+                    for (let j = 0; j < points.length; j++) {
+                        const p1 = points[j];
+                        const p2 = points[(j + 1) % points.length]; // wrapping
+                        
+                        const closest = this.getClosestPointOnSegment(this.mousePos, p1, p2);
+                        const dist = this.getDistance(this.mousePos, closest);
+                        
+                        if (dist <= threshold) {
+                            this.ghostPoint = {
+                                polyIndex: i,
+                                insertIndex: j + 1,
+                                point: closest
+                            };
+                            this.canvas.style.cursor = 'copy'; // indicating add
+                            break;
+                        }
+                    }
+                    if (this.ghostPoint) break;
+                }
+            }
         }
     }
 
@@ -307,6 +396,7 @@ export class PolygonEditor {
         if (hover) {
             this.draggingPoint = hover;
             this.isDraggingOperation = false; 
+            this.hasSavedStateForDrag = false;
         }
     }
 
@@ -314,12 +404,39 @@ export class PolygonEditor {
         this.draggingPoint = null;
     }
 
+    private saveState() {
+        // limit history size
+        if (this.history.length >= this.options.maxHistorySize) {
+            this.history.shift();
+        }
+
+        const snapshot = {
+            polygons: this.polygons.map(p => ({
+                points: p.points.map(pt => ({ ...pt })),
+                fillColor: p.fillColor,
+                strokeColor: p.strokeColor
+            })),
+            currentPoints: this.currentPoints.map(pt => ({ ...pt }))
+        };
+
+        this.history.push(snapshot);
+    }
+
     private undo() {
-        if (this.currentPoints.length > 0) {
-            this.currentPoints.pop();
-        } else if (this.polygons.length > 0) {
-             const poly = this.polygons.pop()!;
-             this.currentPoints = poly.points;
+        if (this.history.length > 0) {
+            const prevState = this.history.pop()!;
+            // deep copy again to avoid reference issues if we undo then redo (or modify)
+            this.polygons = prevState.polygons.map(p => ({
+                points: p.points.map(pt => ({ ...pt })),
+                fillColor: p.fillColor,
+                strokeColor: p.strokeColor
+            }));
+            this.currentPoints = prevState.currentPoints.map(pt => ({ ...pt }));
+            
+            // clear states
+            this.mousePos = null;
+            this.ghostPoint = null;
+            this.draggingPoint = null;
         }
     }
 
@@ -406,7 +523,18 @@ export class PolygonEditor {
 
         this.polygons.forEach(poly => poly.points.forEach(drawPoint));
         this.currentPoints.forEach(drawPoint);
-        
+
+        // Draw ghost point
+        if (this.ghostPoint) {
+            this.ctx.fillStyle = this.adjustAlpha(this.options.pointColor, 0.5);
+            this.ctx.setLineDash([2, 2]);
+            this.ctx.beginPath();
+            this.ctx.arc(this.ghostPoint.point.x, this.ghostPoint.point.y, this.options.pointRadius, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+            this.ctx.setLineDash([]);
+        }
+
         // Preview line for first point (if starting new polygon)
         if (this.currentPoints.length > 1 && this.mousePos && this.isActive) {
             this.ctx.beginPath();
