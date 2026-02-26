@@ -14,8 +14,8 @@
             gap: 20px;
         }
         #image-wrapper {
-            width: 600px;
-            height: 400px;
+            width: 1000px;
+            height: 800px;
             background-color: #f0f0f0;
             border: 2px solid #ccc;
         }
@@ -26,7 +26,7 @@
             display: block;
         }
         .sidebar {
-            width: 300px;
+            width: 600px;
         }
         .controls {
             margin-bottom: 20px;
@@ -45,7 +45,7 @@
             background: #333;
             color: #fff;
             padding: 10px;
-            height: 200px;
+            height: 654px;
             overflow: auto;
         }
     </style>
@@ -91,9 +91,8 @@
         });
 
         // 设置回调
-        editor.setOnComplete((points) => {
-            log(`[Complete] has ${points.length} points.`);
-            console.log(points);
+        editor.setOnComplete((polygons) => {
+            log(`[Compleye] Polygon added. Total polygons: ${polygons.length}`);
         });
 
         // 按钮事件
@@ -115,8 +114,12 @@
         };
 
         btnGet.onclick = () => {
-            const pts = editor.getPoints();
-            log(`[Data] current points: ${JSON.stringify(pts)}`);
+            const polys = editor.getPolygons();
+            log(`[Data] Current polygons: ${polys.length} polygons.\n`);
+            polys.forEach((p, i) => {
+                log(`Polygon ${i + 1}: ${p.length} points. \n${JSON.stringify(p, null, 2)}`);
+            });
+            console.log(polys);
         };
 
         log('Tool is ready. \nClick on the image area to draw points. \nDouble-click to close. \nRight-click to undo.');

@@ -6,8 +6,8 @@ export class PolygonEditor {
     private ctx: CanvasRenderingContext2D;
     
     // state
-    private points: Point[] = [];
-    private isClosed: boolean = false;
+    private polygons: Point[][] = [];
+    private currentPoints: Point[] = [];
     private isActive: boolean = true;
     private mousePos: Point | null = null;
     
@@ -78,8 +78,8 @@ export class PolygonEditor {
      * reset canvas
      */
     public reset() {
-        this.points = [];
-        this.isClosed = false;
+        this.polygons = [];
+        this.currentPoints = [];
         this.mousePos = null;
     }
 
@@ -98,10 +98,10 @@ export class PolygonEditor {
     }
 
     /**
-     * get current polygon points
+     * get all polygons (2D array)
      */
-    public getPoints(): Point[] {
-        return [...this.points];
+    public getPolygons(): Point[][] {
+        return this.polygons.map(p => [...p]);
     }
 
     // --- internal implementation ---
@@ -171,38 +171,37 @@ export class PolygonEditor {
     }
 
     private onClick(e: MouseEvent) {
-        if (!this.isActive || this.isClosed) return;
+        if (!this.isActive) return;
         const p = this.getRelativePos(e);
-        if(!this.points.length || (!(this.points[this.points.length - 1].x === p.x && this.points[this.points.length - 1].y === p.y))) this.addPoint(p);
+        // Avoid duplicates
+        if(!this.currentPoints.length || (!(this.currentPoints[this.currentPoints.length - 1].x === p.x && this.currentPoints[this.currentPoints.length - 1].y === p.y))) {
+             this.currentPoints.push(p);
+        }
     }
 
     private onDblClick(e: MouseEvent) {
-        if (!this.isActive || this.isClosed) return;
+        if (!this.isActive) return;
 
-        if (this.points.length >= 3) {
-            this.isClosed = true;
+        if (this.currentPoints.length >= 3) {
+            this.polygons.push([...this.currentPoints]);
+            this.currentPoints = [];
             this.mousePos = null;
             if (this.onComplete) {
-                this.onComplete(this.getPoints());
+                this.onComplete(this.getPolygons());
             }
         }
     }
 
     private onMouseMove(e: MouseEvent) {
-        if (!this.isActive || this.isClosed) return;
+        if (!this.isActive) return;
         this.mousePos = this.getRelativePos(e);
     }
 
-    private addPoint(p: Point) {
-        this.points.push(p);
-    }
-
     private undo(e: MouseEvent) {
-        if (this.isClosed) {
-            this.isClosed = false;
-            this.mousePos = this.getRelativePos(e);
-        } else {
-            this.points.pop();
+        if (this.currentPoints.length > 0) {
+            this.currentPoints.pop();
+        } else if (this.polygons.length > 0) {
+             this.currentPoints = this.polygons.pop()!;
         }
     }
 
@@ -231,48 +230,43 @@ export class PolygonEditor {
 
         this.ctx.clearRect(0, 0, width, height);
 
-        // polygon path
-        if (this.points.length > 0) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.points[0].x, this.points[0].y);
-            for (let i = 1; i < this.points.length; i++) {
-                this.ctx.lineTo(this.points[i].x, this.points[i].y);
-            }
+        // Draw completed polygons
+        this.ctx.fillStyle = this.options.fillColor;
+        this.ctx.strokeStyle = this.options.strokeColor;
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([]);
 
-            if (this.isClosed) {
-                // when closed path
-                this.ctx.closePath();
-                this.ctx.fillStyle = this.options.fillColor;
-                this.ctx.fill();
-            } else if (this.mousePos && this.isActive) {
-                // when drawing
+        for (const poly of this.polygons) {
+            if (poly.length < 1) continue;
+            this.ctx.beginPath();
+            this.ctx.moveTo(poly[0].x, poly[0].y);
+            for (let i = 1; i < poly.length; i++) {
+                this.ctx.lineTo(poly[i].x, poly[i].y);
+            }
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+        }
+
+        // Draw current polygon (being drawn)
+        if (this.currentPoints.length > 0) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.currentPoints[0].x, this.currentPoints[0].y);
+            for (let i = 1; i < this.currentPoints.length; i++) {
+                this.ctx.lineTo(this.currentPoints[i].x, this.currentPoints[i].y);
+            }
+            
+            // Rubber band to mouse
+            if (this.mousePos && this.isActive) {
                 this.ctx.lineTo(this.mousePos.x, this.mousePos.y);
             }
 
-            this.ctx.strokeStyle = this.options.strokeColor;
-            this.ctx.lineWidth = 2;
-            this.ctx.setLineDash([]);
-            if (!this.isClosed && this.mousePos) {
-                 this.ctx.stroke();
-                 // dash line to mouse position
-                 if (this.mousePos) {
-                     this.ctx.beginPath();
-                     const last = this.points[this.points.length - 1];
-                     this.ctx.moveTo(last.x, last.y);
-                     this.ctx.lineTo(this.mousePos.x, this.mousePos.y);
-                     this.ctx.strokeStyle = '#888';
-                     this.ctx.setLineDash(this.options.lineDash);
-                     this.ctx.stroke();
-                 }
-            } else {
-                this.ctx.stroke();
-            }
+            // Stroke current path (open)
+            this.ctx.stroke();
         }
 
-        // points
-        this.ctx.setLineDash([]);
+        // Draw vertices
         this.ctx.fillStyle = this.options.pointColor;
-        this.ctx.strokeStyle = this.options.strokeColor;
         
         const drawPoint = (p: Point) => {
             this.ctx.beginPath();
@@ -281,12 +275,13 @@ export class PolygonEditor {
             this.ctx.stroke();
         };
 
-        this.points.forEach(drawPoint);
+        this.polygons.forEach(poly => poly.forEach(drawPoint));
+        this.currentPoints.forEach(drawPoint);
         
-        // preview line to mouse position
-        if (!this.isClosed && this.mousePos && this.isActive && this.points.length > 1) {
+        // Preview line for first point (if starting new polygon)
+        if (this.currentPoints.length > 1 && this.mousePos && this.isActive) {
             this.ctx.beginPath();
-            const first = this.points[0];
+            const first = this.currentPoints[0];
             this.ctx.moveTo(first.x, first.y);
             this.ctx.lineTo(this.mousePos.x, this.mousePos.y);
             this.ctx.strokeStyle = '#888';

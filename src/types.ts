@@ -43,6 +43,6 @@ export interface EditorOptions {
 
 /**
  * callback when polygon is completed (double-click)
- * @param points completed polygon points
+ * @param polygons completed polygons (2D array of points)
  */
-export type PolygonCallback = (points: Point[]) => void;
+export type PolygonCallback = (polygons: Point[][]) => void;
