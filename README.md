@@ -1,6 +1,8 @@
 # Polygon Editor
 A lightweight, interactive/typescript library for drawing and editing polygons on HTML Canvas.
 
+Try it in web https://icemooncake.github.io/draw-polygon-editor-demo/
+
 ![Polygon editor demo](./demo/demo.png)
 
 [中文文档](#polygon-editor-中文文档)
@@ -198,6 +200,7 @@ interface EditorOptions {
 # Polygon Editor (中文文档)
 
 一个轻量级的、基于 TypeScript 的 HTML Canvas 多边形绘制与编辑库。
+Web演示 https://icemooncake.github.io/draw-polygon-editor-demo/
 
 ## 目录
 - [功能特性](#功能特性)
