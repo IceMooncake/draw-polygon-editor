@@ -8,4 +8,6 @@ export interface Tool {
     onClick(e: MouseEvent): void;
     onDblClick(e: MouseEvent): void;
     draw(ctx: CanvasRenderingContext2D): void;
+    undo?(): boolean;
+    redo?(): boolean;
 }

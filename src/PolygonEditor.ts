@@ -159,11 +159,19 @@ export class PolygonEditor implements EditorContext {
     }
 
     public undo() {
+        if (this.activeTool && this.activeTool.undo && this.activeTool.undo()) {
+            this.requestDraw();
+            return;
+        }
         this.history.undo();
         this.requestDraw();
     }
 
     public redo() {
+        if (this.activeTool && this.activeTool.redo && this.activeTool.redo()) {
+            this.requestDraw();
+            return;
+        }
         this.history.redo();
         this.requestDraw();
     }

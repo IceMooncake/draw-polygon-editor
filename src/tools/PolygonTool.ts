@@ -91,6 +91,16 @@ export class PolygonTool implements Tool {
         }
     }
 
+    // Capture undo to remove last added point
+    undo(): boolean {
+        if (this.currentPoints.length > 0) {
+            this.currentPoints.pop();
+            this.context.requestDraw();
+            return true;
+        }
+        return false;
+    }
+
     draw(ctx: CanvasRenderingContext2D) {
         // Draw current polygon
         if (this.currentPoints.length > 0) {
