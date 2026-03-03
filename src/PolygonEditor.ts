@@ -249,6 +249,17 @@ export class PolygonEditor {
         }
 
         const p = this.getRelativePos(e);
+
+        // Check if clicking on the first point to close polygon
+        if (this.currentPoints.length >= 3) {
+            const firstPoint = this.currentPoints[0];
+            const threshold = this.options.pointRadius * 2;
+            if (getDistance(p, firstPoint) <= threshold) {
+                this.completeCurrentPolygon();
+                return;
+            }
+        }
+
         // Avoid duplicates
         const lastPoint = this.currentPoints[this.currentPoints.length - 1];
         if(!this.currentPoints.length || (!(lastPoint.x === p.x && lastPoint.y === p.y))) {
@@ -257,9 +268,7 @@ export class PolygonEditor {
         }
     }
 
-    private onDblClick(e: MouseEvent) {
-        if (!this.isActive) return;
-
+    private completeCurrentPolygon() {
         if (this.currentPoints.length >= 3) {
             this.saveState();
             const index = this.polygons.length;
@@ -277,6 +286,11 @@ export class PolygonEditor {
                 this.onComplete(this.getPolygons());
             }
         }
+    }
+
+    private onDblClick(e: MouseEvent) {
+        if (!this.isActive) return;
+        this.completeCurrentPolygon();
     }
 
     private onMouseMove(e: MouseEvent) {
@@ -306,6 +320,15 @@ export class PolygonEditor {
         } else {
             const hover = this.getHoverPoint(this.mousePos);
             this.canvas.style.cursor = hover ? 'move' : 'crosshair';
+
+            // Check if hovering on the first point to close polygon
+            if (this.currentPoints.length >= 3) {
+                const firstPoint = this.currentPoints[0];
+                const threshold = this.options.pointRadius * 2;
+                if (getDistance(this.mousePos, firstPoint) <= threshold) {
+                    this.canvas.style.cursor = 'pointer';
+                }
+            }
 
             // Calculate ghost point for insertion
             this.ghostPoint = null;
