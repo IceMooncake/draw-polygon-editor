@@ -1,7 +1,7 @@
 import { Tool } from './Tool.js';
 import { EditorContext } from '../core/EditorContext.js';
 import { Point } from '../types.js';
-import { getDistance, getClosestPointOnSegment, adjustAlpha } from '../utils.js';
+import { getDistance, getClosestPointOnSegment, checkModifier, adjustAlpha } from '../utils.js';
 
 export class EditTool implements Tool {
     name = 'edit';
@@ -52,7 +52,7 @@ export class EditTool implements Tool {
 
     onMouseMove(e: MouseEvent) {
         this.mousePos = this.getRelativePos(e);
-        const isCtrl = e.ctrlKey || e.metaKey;
+        const allowInsert = checkModifier(e, this.context.options.keyMap?.insertPoint || ['Control', 'Meta']);
 
         if (this.draggingPoint) {
             this.isDragging = true;
@@ -97,7 +97,7 @@ export class EditTool implements Tool {
 
             // Calculate ghost point for insertion
             this.ghostPoint = null;
-            if (isCtrl && !hover) {
+            if (allowInsert && !hover) {
                 const threshold = this.context.options.pointRadius * 2;
                 const polygons = this.context.scene.getPolygons();
                 
@@ -140,7 +140,9 @@ export class EditTool implements Tool {
         if (this.isDragging) return;
         
         // Handle insertion
-        if ((e.ctrlKey || e.metaKey) && this.ghostPoint) {
+        const allowInsert = checkModifier(e, this.context.options.keyMap?.insertPoint || ['Control', 'Meta']);
+
+        if (allowInsert && this.ghostPoint) {
             this.context.history.pushState();
             const { polyIndex, insertIndex, point } = this.ghostPoint;
             const polygons = this.context.scene.getPolygons();

@@ -1,4 +1,4 @@
-import { Point, EditorOptions, PolygonCallback } from './types.js';
+import { Point, EditorOptions, PolygonCallback, KeyMap } from './types.js';
 import { Scene } from './core/Scene.js';
 import { HistoryManager } from './core/HistoryManager.js';
 import { Renderer } from './core/Renderer.js';
@@ -7,9 +7,19 @@ import { PolygonTool } from './tools/PolygonTool.js';
 import { RectangleTool } from './tools/RectangleTool.js';
 import { EditTool } from './tools/EditTool.js';
 import { EditorContext } from './core/EditorContext.js';
+import { checkKey } from './utils.js';
+
+const DEFAULT_KEYMAP: KeyMap = {
+    undo: ['Control+z', 'Meta+z'],
+    redo: ['Control+y', 'Meta+y', 'Control+Shift+z', 'Meta+Shift+z'],
+    // Modifier keys to trigger point insertion
+    insertPoint: ['Control', 'Meta'],
+    delete: ['Backspace', 'Delete']
+};
 
 export class PolygonEditor implements EditorContext {
     public container: HTMLElement;
+
     public canvas: HTMLCanvasElement;
     public ctx: CanvasRenderingContext2D;
     
@@ -45,7 +55,8 @@ export class PolygonEditor implements EditorContext {
             pointRadius: options.pointRadius ?? 4,
             pointColor: options.pointColor ?? "#ffffff",
             lineDash: options.lineDash ?? [5, 5],
-            maxHistorySize: options.maxHistorySize ?? 20
+            maxHistorySize: options.maxHistorySize ?? 20,
+            keyMap: { ...DEFAULT_KEYMAP, ...(options.keyMap || {}) }
         };
 
         // init scene & history
@@ -229,13 +240,14 @@ export class PolygonEditor implements EditorContext {
             this.undo();
         };
         this.handlers.keydown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+            const keys = this.options.keyMap!;
+            
+            if (checkKey(e, keys.undo!)) {
                 e.preventDefault();
                 this.undo();
-            } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-                 // Optional redo bind
-                 e.preventDefault();
-                 this.redo();
+            } else if (checkKey(e, keys.redo!)) {
+                e.preventDefault();
+                this.redo();
             }
         };
 
