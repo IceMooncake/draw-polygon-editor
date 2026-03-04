@@ -13,6 +13,20 @@ export class EditTool implements Tool {
 
     constructor(private context: EditorContext) {}
 
+    private isAxisAligned(points: Point[]): boolean {
+        // Simple heuristic: Must have 4 points
+        if (points.length !== 4) return false;
+        
+        // Each point must share roughly x with one other point and y with one other point
+        for (let i = 0; i < 4; i++) {
+            const p = points[i];
+            const hasMatchX = points.some((other, idx) => idx !== i && Math.abs(other.x - p.x) < 2);
+            const hasMatchY = points.some((other, idx) => idx !== i && Math.abs(other.y - p.y) < 2);
+            if (!hasMatchX || !hasMatchY) return false;
+        }
+        return true;
+    }
+
     activate() {
         this.context.canvas.style.cursor = 'default';
         this.context.requestDraw();
@@ -49,7 +63,32 @@ export class EditTool implements Tool {
             const { polyIndex, pointIndex } = this.draggingPoint;
             const polygons = this.context.scene.getPolygons();
             if (polygons[polyIndex] && polygons[polyIndex].points[pointIndex]) {
-                polygons[polyIndex].points[pointIndex] = { ...this.mousePos };
+                const polygon = polygons[polyIndex];
+                const points = polygon.points;
+                
+                // Check if it's an axis-aligned rectangle before modification
+                // If it is, we try to maintain it
+                const isRect = this.isAxisAligned(points);
+
+                if (isRect) {
+                    const currentPoint = { ...points[pointIndex] }; // value before update
+                    const newX = this.mousePos.x;
+                    const newY = this.mousePos.y;
+
+                    // Update dragged point
+                    points[pointIndex] = { x: newX, y: newY };
+
+                    // Update adjacent points to maintain rectangle
+                    points.forEach((p, idx) => {
+                       if (idx !== pointIndex) {
+                           // Allow slight error margin for floating point
+                           if (Math.abs(p.x - currentPoint.x) < 2) p.x = newX;
+                           if (Math.abs(p.y - currentPoint.y) < 2) p.y = newY;
+                       }
+                    });
+                } else {
+                    points[pointIndex] = { ...this.mousePos };
+                }
                 this.context.requestDraw();
             }
         } else {
@@ -116,16 +155,6 @@ export class EditTool implements Tool {
     onDblClick(e: MouseEvent) {}
 
     draw(ctx: CanvasRenderingContext2D) {
-        // EditTool just draws UI overlays (vertices, ghost points)
-        // The main polygons are drawn by Renderer from Scene.
-        // Wait, Renderer draws polygons. Tool draws EXTRA stuff.
-        
-        // We should draw vertices of ALL polygons here because usually they are not drawn in "View Mode", 
-        // but in "Edit Mode" they are visible.
-        // Actually, the original code always drew vertices.
-        // Let's assume Renderer draws the polygons (filled/stroked).
-        // And Tool draws the handles (vertices).
-
         const polygons = this.context.scene.getPolygons();
         ctx.fillStyle = this.context.options.pointColor;
         ctx.strokeStyle = "#ffffff";
