@@ -56,7 +56,7 @@
     
     <div class="container">
         <div id="image-wrapper">
-             <img src="./example.jpg" alt="Placeholder">
+             <img src="./example.jpg1" alt="Placeholder">
         </div>
 
         <div class="sidebar">
@@ -152,7 +152,7 @@
         btnGet.onclick = () => {
             const polys = editor.getPolygons();
             log(`[Data] Current polygons: ${polys.length} polygons.\n`);
-            console.log(polys);
+            log(JSON.stringify(polys, null, 2));
         };
 
         log('Instructions:\n- Polygon Tool: Click to add points. Click start point to close.\n- Rectangle Tool: Drag to create.\n- Edit Tool: Drag points to move. Ctrl+Click on edge to add point.\n- Shortcuts: Ctrl+Z (Undo), Ctrl+Y (Redo)');
