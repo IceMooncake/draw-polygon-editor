@@ -6,6 +6,20 @@ export interface Point {
     y: number;
 }
 
+export interface KeyMap {
+    undo: string[];
+    redo: string[];
+    /**
+     * Modifier key to trigger point insertion mode (while hovering edge)
+     * e.g. ["Control", "Meta"]
+     */
+    insertPoint: string[];
+    /**
+     * Delete selected points (if selection implemented) or last point
+     */
+    delete: string[]; 
+}
+
 /**
  * Drawing options interface
  */
@@ -44,6 +58,11 @@ export interface EditorOptions {
      * @default 20
      */
     maxHistorySize?: number;
+
+    /**
+     * Custom key bindings
+    */
+    keyMap?: Partial<KeyMap>;
 }
 
 /**
