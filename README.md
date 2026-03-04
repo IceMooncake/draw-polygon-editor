@@ -18,13 +18,18 @@ Try it in web https://icemooncake.github.io/draw-polygon-editor-demo/
 
 ## Features
 
-*   **Interactive Drawing**: Click to add points, double-click to close the polygon.
-*   **Editable Vertices**: Drag any point (vertex) to adjust the shape of completed polygons or the polygon currently being drawn.
+*   **Diverse Drawing Modes**:
+    *   **Polygon**: Click to add points, click the first point or double-click to close.
+    *   **Rectangle**: Drag mouse to create rectangles instantly.
+    *   **Edit Mode**: Select and modify existing shapes.
+*   **Editable Vertices**: Drag any point (vertex) to adjust the shape.
 *   **Smart Styling**:
-    *   **Multiple Colors**: Pass an array of colors for `fillColor` or `strokeColor` to automatically cycle through them for each new polygon.
-    *   **Auto-Transparency**: If `fillColor` is not provided, it automatically generates a 20% opacity version of the `strokeColor` (supports Hex, RGB, RGBA).
-*   **Undo Support**: Right-click or Ctrl/Cmd+Z to undo the last operation (add point, move point, etc.).
-*   **Edge Insertion**: Ctrl/Cmd+Click on an edge to insert a new vertex between two points.
+    *   **Multiple Colors**: Pass an array of colors for `fillColor` or `strokeColor` to automatically cycle through them.
+    *   **Auto-Transparency**: Automatically generates a transparent fill color based on the stroke color if not provided.
+*   **Undo/Redo**: 
+    *   Undo: `Ctrl+Z` or Right-click.
+    *   Redo: `Ctrl+Y`.
+*   **Edge Insertion**: `Ctrl + Click` on an edge to insert a new vertex.
 *   **Responsive**: Automatically adjusts to the container size.
 *   **TypeScript Support**: Fully typed options and methods.
 
@@ -58,6 +63,9 @@ yarn add draw-polygon-editor
         pointRadius: 5
         // fillColor is optional, defaults to transparent strokeColor
     });
+
+    // Switch tools
+    editor.setTool('rectangle'); // 'polygon' | 'rectangle' | 'edit'
 
     // Handle completion
     editor.setOnComplete((polygons) => {
@@ -176,12 +184,15 @@ interface EditorOptions {
 ```
 
 ## API Methods
-
-| Method              | Description                                                                 | Signature / Return                                      |
-|---------------------|-----------------------------------------------------------------------------|---------------------------------------------------------|
+setTool(name)`     | Switch active tool (`polygon`, `rectangle`, `edit`).                        | `name: string` -> `void`                               |
 | `enable()`          | Activate the drawing layer.                                                | `void`                                                 |
 | `disable()`         | Deactivate / hide the drawing layer.                                       | `void`                                                 |
 | `reset()`           | Clear all polygons and reset state.                                        | `void`                                                 |
+| `destroy()`         | Clean up event listeners and DOM elements.                                 | `void`                                                 |
+| `undo()`            | Undo last action.                                                          | `void`                                                 |
+| `redo()`            | Redo last action.                                                          | `void`                                                 |
+| `getPolygons()`     | Get all completed polygons.                                                | `Point[][]`                                            |
+| `setOnComplete(cb)` | Register a callback fired when a polygon is completed.                     | `void`                                                 |
 | `destroy()`         | Clean up event listeners and DOM elements.                                 | `void`                                                 |
 | `getPolygons()`     | Get all completed polygons.                                                | `Point[][]`                                            |
 | `setOnComplete(cb)` | Register a callback fired when a polygon is completed (double-click event). | `cb: (polygons: Point[][]) => void`                    |
@@ -211,16 +222,21 @@ Web演示 https://icemooncake.github.io/draw-polygon-editor-demo/
 - [API 方法](#api-方法)
 - [交互操作](#交互操作)
 
-## 功能特性
+## Functionality
 
-*   **交互式绘制**: 点击添加顶点，双击闭合多边形。
-*   **顶点编辑**: 支持拖拽任意顶点来调整形状（无论是已完成的多边形还是正在绘制中的）。
+*   **多样化的绘制模式**:
+    *   **多边形**: 点击添加点，点击起点或双击闭合。
+    *   **矩形**: 拖拽鼠标快速创建矩形。
+    *   **编辑模式**: 选中并修改现有形状。
+*   **顶点编辑**: 拖拽任意顶点调整形状。
 *   **智能样式**:
-    *   **多色循环**: `fillColor` 和 `strokeColor` 支持传入颜色数组，绘制新多边形时会自动循环使用。
-    *   **自动填充透明度**: 如果未指定 `fillColor`，系统会自动根据 `strokeColor` 生成透明度为 20% 的填充色（支持 Hex, RGB, RGBA 格式）。
-*   **撤销功能**: 右键点击或 Ctrl/Cmd+Z 可撤销上一步操作（支持撤销移动点、添加点等）。
-*   **边上插点**: 按住 Ctrl/Cmd 并在边上单击，可在两个顶点之间新增一个顶点。
-*   **响应式**: 自动适应容器大小变化。
+    *   **多色循环**: `fillColor` 和 `strokeColor` 支持数组循环。
+    *   **自动填充透明度**: 默认生成各颜色对应的 20% 透明度填充色。
+*   **撤销/重做**: 
+    *   撤销: `Ctrl+Z` 或右键点击。
+    *   重做: `Ctrl+Y`。
+*   **边上插点**: `Ctrl + 单击` 边上可在两可顶点之间插入新点。
+*   **响应式**: 自动适应容器大小。
 *   **TypeScript 支持**: 提供完整的类型定义。
 
 ## 安装
@@ -251,7 +267,10 @@ yarn add draw-polygon-editor
     const editor = new PolygonEditor(container, {
         strokeColor: ['#FF0000', '#00FF00', '#0000FF'], // 红、绿、蓝循环
         pointRadius: 5
-        // 不传 fillColor，默认使用线条颜色的半透明版
+       切换工具
+    editor.setTool('rectangle'); // 'polygon' | 'rectangle' | 'edit'
+
+    //  // 不传 fillColor，默认使用线条颜色的半透明版
     });
 
     // 监听绘制完成
@@ -368,10 +387,13 @@ interface EditorOptions {
     /** 最大撤销步数。默认值: 20 */
     maxHistorySize?: number;
 }
-```
-
-## API 方法
-
+```setTool(name)`         | 切换工具 (`polygon`, `rectangle`, `edit`).         | `name: string` -> `void`                          |
+| `enable()`              | 启用绘制层。                                       | `void`                                            |
+| `disable()`             | 禁用 / 隐藏绘制层。                               | `void`                                            |
+| `reset()`               | 清空画布并重置所有状态。                         | `void`                                            |
+| `destroy()`             | 销毁实例并清理事件监听、DOM 元素。               | `void`                                            |
+| `undo()`                | 撤销上一步操作。                                   | `void`                                            |
+| `redo()`                | 重做上一步操作。                    
 | 方法                    | 说明                                               | 函数签名 / 返回值                                  |
 |-------------------------|----------------------------------------------------|---------------------------------------------------|
 | `enable()`              | 启用绘制层。                                       | `void`                                            |

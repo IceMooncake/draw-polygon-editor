@@ -56,14 +56,20 @@
     
     <div class="container">
         <div id="image-wrapper">
-             <img src="./example.jpg" alt="Placeholder">
+             <img src="./example.jpg1" alt="Placeholder">
         </div>
 
         <div class="sidebar">
             <div class="controls">
-                <button id="btn-toggle">开启/关闭遮罩 (open/close mask)</button>
+                <h3>工具 (Tools):</h3>
+                <button id="btn-polygon">多边形 (Polygon)</button>
+                <button id="btn-rect">矩形 (Rectangle)</button>
+                <button id="btn-edit">编辑 (Edit)</button>
+                <h3>操作 (Actions):</h3>
+                <button id="btn-undo">撤销 (Undo)</button>
+                <button id="btn-redo">重做 (Redo)</button>
                 <button id="btn-reset">重置 (Reset)</button>
-                <button id="btn-get">获取坐标 (Get Points)</button>
+                <button id="btn-get">获取数据 (Get Data)</button>
             </div>
             <h3>输出日志 (Output Log):</h3>
             <div id="output">...waiting...</div>
@@ -75,7 +81,13 @@
 
         const wrapper = document.getElementById('image-wrapper');
         const output = document.getElementById('output');
-        const btnToggle = document.getElementById('btn-toggle');
+        
+        // Buttons
+        const btnPolygon = document.getElementById('btn-polygon');
+        const btnRect = document.getElementById('btn-rect');
+        const btnEdit = document.getElementById('btn-edit');
+        const btnUndo = document.getElementById('btn-undo');
+        const btnRedo = document.getElementById('btn-redo');
         const btnReset = document.getElementById('btn-reset');
         const btnGet = document.getElementById('btn-get');
 
@@ -87,48 +99,63 @@
         const editor = new PolygonEditor(wrapper, {
             lineDash: [4, 4],
             strokeColor: [
-              'rgb(255, 99, 132)',
-              '#1f6feb',
-              '#1098ad',
-              '#20c997',
-              '#ff6f92',
+              '#e74c3c', // Red
+              '#3498db', // Blue
+              '#2ecc71', // Green
+              '#f1c40f', // Yellow
+              '#9b59b6', // Purple
             ],
-            pointRadius: 3
+            pointRadius: 4
         });
 
-        // listen to events
+        // Set default tool
+        editor.setTool('polygon');
+        log('[Init] Editor initialized. Default tool: Polygon');
+
+        // Listen to events
         editor.setOnComplete((polygons) => {
-            log(`[Complete] Polygon added. Total polygons: ${polygons.length}`);
+            log(`[Event] Polygon Completed. Total polygons: ${polygons.length}`);
         });
 
-        // toggle enable/disable
-        let isEnabled = true;
-        btnToggle.onclick = () => {
-            isEnabled = !isEnabled;
-            if (isEnabled) {
-                editor.enable();
-                log('[Info] engine enabled (canvas visible)');
-            } else {
-                editor.disable();
-                log('[Info] engine disabled (canvas hidden)');
-            }
+        // Tool switching
+        btnPolygon.onclick = () => {
+            editor.setTool('polygon');
+            log('[Tool] Switched to Polygon Tool');
+        };
+
+        btnRect.onclick = () => {
+            editor.setTool('rectangle');
+            log('[Tool] Switched to Rectangle Tool');
+        };
+
+        btnEdit.onclick = () => {
+            editor.setTool('edit');
+            log('[Tool] Switched to Edit Tool');
+        };
+
+        // Actions
+        btnUndo.onclick = () => {
+            editor.undo();
+            log('[Action] Undo');
+        };
+
+        btnRedo.onclick = () => {
+            editor.redo();
+            log('[Action] Redo');
         };
 
         btnReset.onclick = () => {
              editor.reset();
-             log('[Info] canvas reset');
+             log('[Action] Canvas reset');
         };
 
         btnGet.onclick = () => {
             const polys = editor.getPolygons();
             log(`[Data] Current polygons: ${polys.length} polygons.\n`);
-            polys.forEach((p, i) => {
-                log(`Polygon ${i + 1}: ${p.length} points. \n${JSON.stringify(p, null, 2)}`);
-            });
-            console.log(polys);
+            log(JSON.stringify(polys, null, 2));
         };
 
-        log('Tool is ready. \nClick on the image area to draw points. \nDouble-click to close. \nRight-click to undo.');
+        log('Instructions:\n- Polygon Tool: Click to add points. Click start point to close.\n- Rectangle Tool: Drag to create.\n- Edit Tool: Drag points to move. Ctrl+Click on edge to add point.\n- Shortcuts: Ctrl+Z (Undo), Ctrl+Y (Redo)');
     </script>
 </body>
 </html>
