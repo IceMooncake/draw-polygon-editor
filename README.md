@@ -155,6 +155,7 @@ onBeforeUnmount(() => {
 
 The `PolygonEditor` constructor accepts a DOM element and an options object:
 
+
 ```typescript
 interface EditorOptions {
     /** 
@@ -162,40 +163,35 @@ interface EditorOptions {
      * Default: 20% opacity of strokeColor 
      */
     fillColor?: string | string[];
-
     /** 
      * Stroke color(s). Can be a specific color string or an array of colors.
      * Default: "#ff0000" 
      */
     strokeColor?: string | string[];
-
     /** Radius of the vertices in pixels. Default: 4 */
     pointRadius?: number;
-
     /** Color of the vertices. Default: "#ffffff" */
     pointColor?: string;
-
     /** Line dash pattern [line, gap]. Default: [5, 5] */
     lineDash?: number[];
-
     /** Maximum number of undo steps. Default: 20 */
     maxHistorySize?: number;
 }
 ```
 
 ## API Methods
-setTool(name)`     | Switch active tool (`polygon`, `rectangle`, `edit`).                        | `name: string` -> `void`                               |
-| `enable()`          | Activate the drawing layer.                                                | `void`                                                 |
-| `disable()`         | Deactivate / hide the drawing layer.                                       | `void`                                                 |
-| `reset()`           | Clear all polygons and reset state.                                        | `void`                                                 |
-| `destroy()`         | Clean up event listeners and DOM elements.                                 | `void`                                                 |
-| `undo()`            | Undo last action.                                                          | `void`                                                 |
-| `redo()`            | Redo last action.                                                          | `void`                                                 |
-| `getPolygons()`     | Get all completed polygons.                                                | `Point[][]`                                            |
-| `setOnComplete(cb)` | Register a callback fired when a polygon is completed.                     | `void`                                                 |
-| `destroy()`         | Clean up event listeners and DOM elements.                                 | `void`                                                 |
-| `getPolygons()`     | Get all completed polygons.                                                | `Point[][]`                                            |
-| `setOnComplete(cb)` | Register a callback fired when a polygon is completed (double-click event). | `cb: (polygons: Point[][]) => void`                    |
+
+| Method                | Description                                                        | Signature / Return Value                        |
+|-----------------------|--------------------------------------------------------------------|-------------------------------------------------|
+| `setTool(name)`       | Switch active tool (`polygon`, `rectangle`, `edit`).               | `name: string` → `void`                         |
+| `enable()`            | Activate the drawing layer.                                        | `void`                                          |
+| `disable()`           | Deactivate / hide the drawing layer.                               | `void`                                          |
+| `reset()`             | Clear all polygons and reset state.                                | `void`                                          |
+| `destroy()`           | Clean up event listeners and DOM elements.                         | `void`                                          |
+| `undo()`              | Undo last action.                                                  | `void`                                          |
+| `redo()`              | Redo last action.                                                  | `void`                                          |
+| `getPolygons()`       | Get all completed polygons.                                        | `Point[][]`                                     |
+| `setOnComplete(cb)`   | Register a callback fired when a polygon is completed (double-click event). | `cb: (polygons: Point[][]) => void`    |
 
 ## Events
 
@@ -361,6 +357,7 @@ onBeforeUnmount(() => {
 
 `PolygonEditor` 构造函数接收一个 DOM 元素和一个配置对象：
 
+
 ```typescript
 interface EditorOptions {
     /** 
@@ -368,38 +365,33 @@ interface EditorOptions {
      * 默认值: 自动取 strokeColor 的 20% 透明度版本
      */
     fillColor?: string | string[];
-
     /** 
      * 线条颜色。可以是单个颜色字符串，也可以是颜色数组。
      * 默认值: "#ff0000" 
      */
     strokeColor?: string | string[];
-
     /** 顶点半径 (像素)。默认值: 4 */
     pointRadius?: number;
-
     /** 顶点颜色。默认值: "#ffffff" */
     pointColor?: string;
-
     /** 虚线样式 [实线长, 间隙长]。默认值: [5, 5] */
     lineDash?: number[];
-
     /** 最大撤销步数。默认值: 20 */
     maxHistorySize?: number;
 }
-```setTool(name)`         | 切换工具 (`polygon`, `rectangle`, `edit`).         | `name: string` -> `void`                          |
+```
+
+## API 方法
+
+| 方法                    | 说明                                               | 函数签名 / 返回值                                  |
+|-------------------------|----------------------------------------------------|---------------------------------------------------|
+| `setTool(name)`         | 切换工具 (`polygon`, `rectangle`, `edit`).         | `name: string` → `void`                          |
 | `enable()`              | 启用绘制层。                                       | `void`                                            |
 | `disable()`             | 禁用 / 隐藏绘制层。                               | `void`                                            |
 | `reset()`               | 清空画布并重置所有状态。                         | `void`                                            |
 | `destroy()`             | 销毁实例并清理事件监听、DOM 元素。               | `void`                                            |
 | `undo()`                | 撤销上一步操作。                                   | `void`                                            |
-| `redo()`                | 重做上一步操作。                    
-| 方法                    | 说明                                               | 函数签名 / 返回值                                  |
-|-------------------------|----------------------------------------------------|---------------------------------------------------|
-| `enable()`              | 启用绘制层。                                       | `void`                                            |
-| `disable()`             | 禁用 / 隐藏绘制层。                               | `void`                                            |
-| `reset()`               | 清空画布并重置所有状态。                         | `void`                                            |
-| `destroy()`             | 销毁实例并清理事件监听、DOM 元素。               | `void`                                            |
+| `redo()`                | 重做上一步操作。                                   | `void`                                            |
 | `getPolygons()`         | 获取所有已完成多边形。                           | `Point[][]`                                       |
 | `setOnComplete(cb)`     | 在多边形闭合（双击）时触发回调。                 | `cb: (polygons: Point[][]) => void`               |
 
