@@ -78,14 +78,44 @@ export class EditTool implements Tool {
                     // Update dragged point
                     points[pointIndex] = { x: newX, y: newY };
 
-                    // Update adjacent points to maintain rectangle
-                    points.forEach((p, idx) => {
-                       if (idx !== pointIndex) {
-                           // Allow slight error margin for floating point
-                           if (Math.abs(p.x - currentPoint.x) < 2) p.x = newX;
-                           if (Math.abs(p.y - currentPoint.y) < 2) p.y = newY;
-                       }
-                    });
+                    // Find Vertical Neighbor (shares X) - Find the one closest in X
+                    let vNode: Point | null = null;
+                    let minXDiff = Infinity;
+
+                    for (let i = 0; i < points.length; i++) {
+                        if (i === pointIndex) continue;
+                        const dx = Math.abs(points[i].x - currentPoint.x);
+                        if (dx < 2 && dx < minXDiff) {
+                            minXDiff = dx;
+                            vNode = points[i];
+                        }
+                    }
+
+                    // Find Horizontal Neighbor (shares Y)
+                    const hCandidates: Point[] = [];
+                    for (let i = 0; i < points.length; i++) {
+                        if (i === pointIndex) continue;
+                        if (vNode && points[i] === vNode) continue; 
+                        
+                        // Must be close in Y
+                        if (Math.abs(points[i].y - currentPoint.y) < 2) {
+                            hCandidates.push(points[i]);
+                        }
+                    }
+
+                    let hNode: Point | null = null;
+                    if (hCandidates.length === 1) {
+                         hNode = hCandidates[0];
+                    } else if (hCandidates.length > 1 && vNode) {
+                        // Distinguish H and D.
+                        hCandidates.sort((a, b) => Math.abs(b.y - vNode!.y) - Math.abs(a.y - vNode!.y));
+                        hNode = hCandidates[0];
+                    } else if (hCandidates.length > 0) {
+                        hNode = hCandidates[0];
+                    }
+
+                    if (vNode) vNode.x = newX;
+                    if (hNode) hNode.y = newY;
                 } else {
                     points[pointIndex] = { ...this.mousePos };
                 }
