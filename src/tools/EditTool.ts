@@ -6,6 +6,12 @@ import { getDistance, getClosestPointOnSegment, checkModifier, adjustAlpha } fro
 export class EditTool implements Tool {
     name = 'edit';
     private draggingPoint: { polyIndex: number, pointIndex: number } | null = null;
+    private rectDragMeta: {
+        polyIndex: number,
+        pointIndex: number,
+        verticalNeighborIndex: number,
+        horizontalNeighborIndex: number
+    } | null = null;
     private ghostPoint: { polyIndex: number, insertIndex: number, point: Point } | null = null;
     private mousePos: Point | null = null;
     private isDragging: boolean = false;
@@ -34,6 +40,7 @@ export class EditTool implements Tool {
 
     deactivate() {
         this.draggingPoint = null;
+        this.rectDragMeta = null;
         this.ghostPoint = null;
         this.mousePos = null;
         this.context.requestDraw();
@@ -44,6 +51,9 @@ export class EditTool implements Tool {
         const hover = this.getHoverPoint(this.mousePos);
         if (hover) {
             this.draggingPoint = hover;
+            const polygons = this.context.scene.getPolygons();
+            const points = polygons[hover.polyIndex]?.points;
+            this.rectDragMeta = points ? this.getRectDragMeta(points, hover.polyIndex, hover.pointIndex) : null;
             this.isDragging = false;
             this.hasSavedState = false;
             this.context.canvas.style.cursor = 'move';
@@ -66,56 +76,18 @@ export class EditTool implements Tool {
                 const polygon = polygons[polyIndex];
                 const points = polygon.points;
                 
-                // Check if it's an axis-aligned rectangle before modification
-                // If it is, we try to maintain it
-                const isRect = this.isAxisAligned(points);
+                const rectDragMeta = this.rectDragMeta;
+                const lockedRectDrag = rectDragMeta
+                    && rectDragMeta.polyIndex === polyIndex
+                    && rectDragMeta.pointIndex === pointIndex;
 
-                if (isRect) {
-                    const currentPoint = { ...points[pointIndex] }; // value before update
+                if (lockedRectDrag) {
                     const newX = this.mousePos.x;
                     const newY = this.mousePos.y;
 
-                    // Update dragged point
                     points[pointIndex] = { x: newX, y: newY };
-
-                    // Find Vertical Neighbor (shares X) - Find the one closest in X
-                    let vNode: Point | null = null;
-                    let minXDiff = Infinity;
-
-                    for (let i = 0; i < points.length; i++) {
-                        if (i === pointIndex) continue;
-                        const dx = Math.abs(points[i].x - currentPoint.x);
-                        if (dx < 2 && dx < minXDiff) {
-                            minXDiff = dx;
-                            vNode = points[i];
-                        }
-                    }
-
-                    // Find Horizontal Neighbor (shares Y)
-                    const hCandidates: Point[] = [];
-                    for (let i = 0; i < points.length; i++) {
-                        if (i === pointIndex) continue;
-                        if (vNode && points[i] === vNode) continue; 
-                        
-                        // Must be close in Y
-                        if (Math.abs(points[i].y - currentPoint.y) < 2) {
-                            hCandidates.push(points[i]);
-                        }
-                    }
-
-                    let hNode: Point | null = null;
-                    if (hCandidates.length === 1) {
-                         hNode = hCandidates[0];
-                    } else if (hCandidates.length > 1 && vNode) {
-                        // Distinguish H and D.
-                        hCandidates.sort((a, b) => Math.abs(b.y - vNode!.y) - Math.abs(a.y - vNode!.y));
-                        hNode = hCandidates[0];
-                    } else if (hCandidates.length > 0) {
-                        hNode = hCandidates[0];
-                    }
-
-                    if (vNode) vNode.x = newX;
-                    if (hNode) hNode.y = newY;
+                    points[rectDragMeta.verticalNeighborIndex].x = newX;
+                    points[rectDragMeta.horizontalNeighborIndex].y = newY;
                 } else {
                     points[pointIndex] = { ...this.mousePos };
                 }
@@ -163,6 +135,7 @@ export class EditTool implements Tool {
 
     onMouseUp(e: MouseEvent) {
         this.draggingPoint = null;
+        this.rectDragMeta = null;
         this.isDragging = false;
     }
 
@@ -233,5 +206,37 @@ export class EditTool implements Tool {
             }
         }
         return null;
+    }
+
+    private getRectDragMeta(
+        points: Point[],
+        polyIndex: number,
+        pointIndex: number
+    ): {
+        polyIndex: number,
+        pointIndex: number,
+        verticalNeighborIndex: number,
+        horizontalNeighborIndex: number
+    } | null {
+        if (!this.isAxisAligned(points) || points.length !== 4) {
+            return null;
+        }
+
+        const dragged = points[pointIndex];
+        const prevIndex = (pointIndex + 3) % 4;
+        const nextIndex = (pointIndex + 1) % 4;
+
+        const prevDx = Math.abs(points[prevIndex].x - dragged.x);
+        const nextDx = Math.abs(points[nextIndex].x - dragged.x);
+
+        const verticalNeighborIndex = prevDx <= nextDx ? prevIndex : nextIndex;
+        const horizontalNeighborIndex = verticalNeighborIndex === prevIndex ? nextIndex : prevIndex;
+
+        return {
+            polyIndex,
+            pointIndex,
+            verticalNeighborIndex,
+            horizontalNeighborIndex
+        };
     }
 }
